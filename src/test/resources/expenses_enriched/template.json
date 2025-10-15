@@ -1,0 +1,45 @@
+{
+	"transaction_id": "tx-20241323-123455",
+	"transaction_amount": 1000,
+	"transaction_currency": "hkd",
+	"transaction_timestamp": "2024-12-03 11:22:33",
+	"transaction_timestamp_timezone": "Asia/Hong_Kong",
+	"merchant_code": "starbuck-01",
+	"merchant_groups": [
+		"summer_sale_participants",
+		"2025_new_merchants"
+	],
+	"merchant_category": "fnb:japanese",
+	"store_location": "Hong Kong IFC Mall",
+	"terminal_id": "POS-IFC-001",
+	"cashier_id": "CASHIER-007",
+	"item_list": [
+		{
+			"item_code": "latte-regular",
+			"item_name": "Caffe Latte",
+			"quantity": 2,
+			"unit_price": 45
+		},
+		{
+			"item_code": "sandwich-tuna",
+			"item_name": "Tuna Sandwich",
+			"quantity": 1,
+			"unit_price": 55
+		}
+	],
+	"member_id": "12345",
+	"member_tier_no": 3,
+	"member_tier_name": "Gold",
+	"payments": [
+		{
+			"type": "by-card",
+			"amount": 700,
+			"card_type": "visa"
+		},
+		{
+			"type": "by-cash",
+			"amount": 300
+		}
+	],
+	"remarks": "Customer used member points for discount."
+}
