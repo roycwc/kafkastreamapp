@@ -1,0 +1,51 @@
+{
+  "transaction_id": "tx-20241230-101500",
+  "transaction_amount": 1680,
+  "transaction_currency": "hkd",
+  "transaction_timestamp": "2024-12-30 10:15:00",
+  "transaction_timestamp_timezone": "Asia/Hong_Kong",
+  "merchant_code": "starbuck-01",
+  "merchant_groups": [
+    "summer_sale_participants",
+    "2025_new_merchants"
+  ],
+  "merchant_category": "fnb:japanese",
+  "store_location": "Hong Kong IFC Mall",
+  "terminal_id": "POS-IFC-003",
+  "cashier_id": "CASHIER-002",
+  "item_list": [
+    {
+      "item_code": "espresso-double",
+      "item_name": "Double Espresso",
+      "quantity": 1,
+      "unit_price": 38
+    },
+    {
+      "item_code": "giftcard-300",
+      "item_name": "Gift Card",
+      "quantity": 3,
+      "unit_price": 300
+    },
+    {
+      "item_code": "mug-limited",
+      "item_name": "Limited Edition Mug",
+      "quantity": 1,
+      "unit_price": 342
+    }
+  ],
+  "member_id": "12345",
+  "member_tier_no": 3,
+  "member_tier_name": "Gold",
+  "payments": [
+    {
+      "type": "by-card",
+      "amount": 1380,
+      "card_type": "master"
+    },
+    {
+      "type": "by-cash",
+      "amount": 300
+    }
+  ],
+  "remarks": "Customer purchased holiday gifts and topped up gift card."
+}

@@ -1,6 +1,7 @@
 package com.testagg;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,6 +15,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -148,4 +150,84 @@ public class AppTest {
         }
     }
 
+    @Test
+    @DisplayName("Aggregate transaction amounts across events")
+    public void shouldAggregateTransactionAmounts() throws IOException {
+        var mapper = new ObjectMapper();
+
+        var path1 = "src/test/resources/expenses_enriched/samples/tx-20241223-123455.json";
+        var path2 = "src/test/resources/expenses_enriched/samples/tx-20241230-101500.json";
+
+        var json1 = Files.readString(Paths.get(path1));
+        var json2 = Files.readString(Paths.get(path2));
+
+        var node1 = (ObjectNode) mapper.readTree(json1);
+        var node2 = (ObjectNode) mapper.readTree(json2);
+
+        var memberId = node1.get("member_id").asText();
+        assertEquals(memberId, node2.get("member_id").asText());
+
+        var amount1 = node1.get("transaction_amount").asInt();
+        var amount2 = node2.get("transaction_amount").asInt();
+
+        var builder = new StreamsBuilder();
+        builder.stream("input-topic", Consumed.with(Serdes.String(), Serdes.String()))
+                .groupByKey()
+                .aggregate(
+                        () -> mapper.createObjectNode().put("aggregate_amount", 0).toString(),
+                        (key, value, aggregate) -> {
+                            try {
+                                var currentEvent = (ObjectNode) mapper.readTree(value);
+                                var aggregateNode = (ObjectNode) mapper.readTree(aggregate);
+                                var runningTotal = aggregateNode.has("aggregate_amount")
+                                        ? aggregateNode.get("aggregate_amount").asInt()
+                                        : 0;
+                                runningTotal += currentEvent.get("transaction_amount").asInt();
+                                var resultNode = currentEvent.deepCopy();
+                                resultNode.put("aggregate_amount", runningTotal);
+                                return mapper.writeValueAsString(resultNode);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        },
+                        Materialized.with(Serdes.String(), Serdes.String()))
+                .toStream()
+                .to("result-topic", Produced.with(Serdes.String(), Serdes.String()));
+
+        var topology = builder.build();
+
+        var props = new Properties();
+        props.setProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+
+        try (var testDriver = new TopologyTestDriver(topology, props)) {
+            var inputTopic = testDriver.createInputTopic(
+                    "input-topic",
+                    stringSerde.serializer(),
+                    stringSerde.serializer());
+            var outputTopic = testDriver.createOutputTopic(
+                    "result-topic",
+                    stringSerde.deserializer(),
+                    stringSerde.deserializer());
+
+            inputTopic.pipeInput(memberId, json1);
+            inputTopic.pipeInput(memberId, json2);
+
+            var firstResult = outputTopic.readKeyValue();
+            assertEquals(memberId, firstResult.key);
+            var firstNode = mapper.readTree(firstResult.value);
+            assertEquals(amount1, firstNode.get("aggregate_amount").asInt());
+            assertEquals(amount1, firstNode.get("transaction_amount").asInt());
+
+            var secondResult = outputTopic.readKeyValue();
+            assertEquals(memberId, secondResult.key);
+            var secondNode = mapper.readTree(secondResult.value);
+            assertEquals(amount1 + amount2, secondNode.get("aggregate_amount").asInt());
+            assertEquals(amount2, secondNode.get("transaction_amount").asInt());
+
+            assertTrue(outputTopic.isEmpty());
+        }
+    }
+
 }
+
